@@ -272,6 +272,40 @@ test('an exact frame of a video sought there waits for its own frame on screen, 
   }
 });
 
+test('a video woken ahead while hidden, then shown: its old frame presented again after the seek is not taken for the sought one', { skip: !hasFfmpeg && 'no ffmpeg', timeout: 60_000 }, async () => {
+  const dir = footage('of-stale-frame-');
+  writeFileSync(join(dir, 'film.html'), filmHtml({ stage: { w: 320, h: 180 }, tracks: [{ clips: [{ id: 'v', src: 'a.mp4', at: 2, time: [0, 4] }] }] }));
+  const s = await open(dir);
+  try {
+    const seen = await s.film.page.evaluate(async () => {
+      const v = document.querySelector('video');
+      /* before the clip: its video is woken at its first frame, hidden */
+      await window.film.frame(1.5);
+      const real = v.requestVideoFrameCallback.bind(v);
+      const presented = [];
+      const watch = () => real((now, meta) => { presented.push(meta.mediaTime); watch(); });
+      watch();
+      /* the clip comes on and the browser presents the frame the video holds once more, late: after the seek under
+         way is done, as a slow machine has it */
+      let late = true;
+      v.requestVideoFrameCallback = (callback) => {
+        if (!late) return real(callback);
+        late = false;
+        const old = v.currentTime;
+        const fire = () => callback(performance.now(), { mediaTime: old });
+        setTimeout(() => (v.seeking ? v.addEventListener('seeked', fire, { once: true }) : fire()), 0);
+        return 0;
+      };
+      await window.film.frame(2.75);
+      return presented;
+    });
+    /* 10 frames a second: the frame at 0.75 s of the video is the one from 0.7 s */
+    assert.ok(seen.some((m) => Math.abs(m - 0.7) < 0.01), `the frame at 0.75 s was on screen when the frame was done: ${seen}`);
+  } finally {
+    await s.close();
+  }
+});
+
 test('an edit that splits, adds, removes or moves clips to a new track changes the film in place, without loading it again', { skip: !hasFfmpeg && 'no ffmpeg', timeout: 120_000 }, async () => {
   const dir = footage('of-inplace-');
   writeFileSync(join(dir, 'title.html'), page('title', 2));

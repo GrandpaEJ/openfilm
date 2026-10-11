@@ -180,24 +180,27 @@ const SAME_TIME = 1e-4; // s: a video's currentTime is kept to the microsecond, 
  * Put a video on the frame at `t` and wait until that frame is the one on screen. `seeked` fires when the decoder
  * has the frame, not when the compositor shows it: captured right after, the picture is still the previous one
  * (often a stretch back, after a long seek), and the same t drew different pictures. The frame callback is the
- * moment the new frame is presented; one before the seek is done is still the old frame (shown again as its video turns
- * visible), and is not taken for it.
+ * moment the new frame is presented. Knowing how long the video's frames last (`frame`, from the host), the frame for t
+ * is told by its time: the old frame, shown again as its video turns visible, is not taken for it, even after the seek
+ * is done. Not knowing, a frame presented before the seek is done is taken for the old one when it is nearer where the
+ * video was.
  */
-async function showVideoAt(v, t) {
+async function showVideoAt(v, t, frame = null) {
   /* a seek still under way (the start a video was woken at, see wake): its `seeked` and its frame would be taken for
      this one's, and the picture captured was the earlier time's */
   if (v.seeking) await new Promise((done) => { v.addEventListener('seeked', done, { once: true }); setTimeout(done, 10000); });
   /* the same time again (to the microsecond the element keeps): no seek, nothing new to present (a seek there would
      present nothing, and the wait would run out) */
   if (!v.seeking && Math.abs(v.currentTime - t) < SAME_TIME && v.readyState >= 2) return;
-  /* the old frame is the one nearer where the video was than where it is sought (a frame there would look the same) */
   const before = v.currentTime;
   let sought = false;
+  /* the frame a seek to t lands in starts at most a frame before t (and the seek goes a millisecond in, see host.mjs),
+     with a quarter frame to spare for footage whose frames are not all as long; without the frame's length, the old
+     frame is the one nearer where the video was than where it is sought (a frame there would look the same) */
+  const right = (m) => (frame ? m <= t + 0.002 && t + 0.001 - m < frame * 1.25 : sought || Math.abs(m - t) <= Math.abs(m - before));
   const presented = typeof v.requestVideoFrameCallback === 'function'
     ? new Promise((done) => {
-      const next = () => v.requestVideoFrameCallback((now, frame) => {
-        if (sought || Math.abs(frame.mediaTime - t) <= Math.abs(frame.mediaTime - before)) done(); else next();
-      });
+      const next = () => v.requestVideoFrameCallback((now, meta) => { if (right(meta.mediaTime)) done(); else next(); });
       next();
       setTimeout(done, 3000);
     })
@@ -391,6 +394,23 @@ const cueing = new Set();
 /** how long an edit waits for what it puts on screen; then it shows anyway, the rest drawn as it comes */
 const CUE_MS = 5000;
 
+/** @type {Map<string, Promise<number | null>>} */
+const frameLengths = new Map();
+/**
+ * How long a video clip's frames last, as the host that serves the film says (host.mjs, from ffprobe); null from a
+ * server that cannot tell. Asked once a file.
+ */
+function frameOf(c) {
+  const src = url(c.row.src);
+  /* a video from another site: not the host's to say */
+  if (src.origin !== location.origin) return Promise.resolve(null);
+  if (!frameLengths.has(src.pathname)) {
+    frameLengths.set(src.pathname, fetch(new URL(`__film/frame-duration?of=${encodeURIComponent(src.pathname)}`, location.href))
+      .then((r) => (r.ok ? r.json() : null)).then((said) => (said?.seconds > 0 ? said.seconds : null)).catch(() => null));
+  }
+  return frameLengths.get(src.pathname);
+}
+
 /** Wait for a video's file for an exact frame: too long is the film's error, said by the clip. */
 function loaded(c) {
   let timer;
@@ -559,7 +579,7 @@ async function draw(t, live) {
       if (!c.el.paused) c.el.pause();
       c.lastWant = want;
       await loaded(c);
-      await showVideoAt(c.el, want);
+      await showVideoAt(c.el, want, await frameOf(c));
       return;
     }
     const local = sourceAt(c.span, t - c.at, c.row, c.native);

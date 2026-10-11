@@ -1,4 +1,5 @@
 // The reference host (SPEC §4): serves a film folder over HTTP, opens its page in Chromium and asks it for frames.
+import { execFile } from 'node:child_process';
 import { createServer } from 'node:http';
 import { createReadStream, readFileSync, realpathSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -72,6 +73,14 @@ export function folderFiles(root, { inject = `<script>${HOST_FLAG}</script>`, ti
       res.writeHead(200, { ...extraHeaders, 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'no-store' }).end(FILM_DOC);
       return true;
     }
+    if (path.endsWith('/__film/frame-duration')) {
+      /* how long a video's frames last, for the timeline's exact frames (`?of=` the video's address) */
+      const file = fileInRoot(root, query?.get('of') ?? '');
+      const answer = (seconds) => res.writeHead(200, { ...extraHeaders, 'content-type': 'application/json', 'cache-control': 'no-store' }).end(JSON.stringify({ seconds }));
+      if (!file) answer(null);
+      else void frameDuration(file).then(answer);
+      return true;
+    }
     let rel;
     try { rel = decodeURIComponent(path); } catch { res.writeHead(400, extraHeaders).end('bad address'); return true; }
     /* an address speaks in `/`: a `\` in it (escaped as %5C) would be a separator on Windows, past every check */
@@ -117,6 +126,42 @@ export function folderFiles(root, { inject = `<script>${HOST_FLAG}</script>`, ti
 }
 
 const within = (folder, path) => path === folder || path.startsWith(folder.endsWith(sep) ? folder : folder + sep);
+
+/** The file an address names inside `root` (not through a link out of it), or null. */
+function fileInRoot(root, address) {
+  let rel;
+  try { rel = decodeURIComponent(address); } catch { return null; }
+  if (!rel.startsWith('/') || rel.includes('\\') || rel.includes('\0')) return null;
+  const file = normalize(join(root, rel));
+  if (!file.startsWith(root + sep)) return null;
+  try { return within(realpathSync(root), realpathSync(file)) && statSync(file).isFile() ? file : null; } catch { return null; }
+}
+
+/** @type {Map<string, Promise<number | null>>} */
+const frameDurations = new Map();
+/**
+ * How long a video's frames last on average (ffprobe's frame rate), once per version of the file; null when ffprobe
+ * cannot tell (no ffprobe, no video stream).
+ * @param {string} file
+ */
+export function frameDuration(file) {
+  let key;
+  try { const stat = statSync(file); key = `${file}\0${stat.size}\0${stat.mtimeMs}`; } catch { return Promise.resolve(null); }
+  if (!frameDurations.has(key)) {
+    frameDurations.set(key, new Promise((done) => {
+      execFile('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=avg_frame_rate,r_frame_rate', '-of', 'json', file],
+        { timeout: 20_000, windowsHide: true }, (error, stdout) => {
+          if (error) { frameDurations.delete(key); done(null); return; }
+          let stream;
+          try { stream = JSON.parse(String(stdout)).streams?.[0]; } catch { /* nothing to read */ }
+          const rate = [stream?.avg_frame_rate, stream?.r_frame_rate].map((r) => String(r ?? '').split('/').map(Number))
+            .map(([n, d]) => (n > 0 && d > 0 ? n / d : 0)).find((r) => r > 0 && r <= 1000);
+          done(rate ? 1 / rate : null);
+        });
+    }));
+  }
+  return /** @type {Promise<number | null>} */ (frameDurations.get(key));
+}
 
 /**
  * Serve `root`. HTML gets the host flag injected before any page script;
