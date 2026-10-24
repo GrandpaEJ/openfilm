@@ -40,10 +40,14 @@ test('with the app\'s chat, a ruler click moves the playhead and an Alt-click re
     const referred = () => page.evaluate(() => window.referred);
     assert.equal(await playhead(), 0);
 
-    /* a plain click: the playhead goes there, nothing is referred */
-    await page.mouse.click(ruler.x + 200, y);
-    await page.waitForFunction(() => Number(document.querySelector('[data-timeline] [role="slider"]')?.getAttribute('aria-valuenow')) > 0);
+    /* a plain click: the playhead goes there, nothing is referred. Just after the page opens, the preview may not take
+       a seek yet (the playhead is where the preview is), so the click is made again until it does */
+    for (let tries = 0; tries < 20 && await playhead() === 0; tries++) {
+      await page.mouse.click(ruler.x + 200, y);
+      await page.waitForTimeout(250);
+    }
     const clicked = await playhead();
+    assert.ok(clicked > 0);
     assert.deepEqual(await referred(), []);
 
     /* a plain drag scrubs */
