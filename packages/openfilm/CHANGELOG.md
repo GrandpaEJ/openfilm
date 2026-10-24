@@ -1,5 +1,23 @@
 # openfilm
 
+## 0.3.0
+
+### Minor Changes
+
+- [#183](https://github.com/openfilm/openfilm/pull/183) [`28206c3`](https://github.com/openfilm/openfilm/commit/28206c376e0d398e69df7b541b3edb1313fd47b7) Thanks [@WEBGRS](https://github.com/WEBGRS)! - CLI: `openfilm render --subtitles` burns the project's subtitles into the rendered video, in their own style, through the same code Studio's export uses.
+
+### Patch Changes
+
+- [#168](https://github.com/openfilm/openfilm/pull/168) [`619c163`](https://github.com/openfilm/openfilm/commit/619c163d2632e6e87e989049fec04dfc22188cd1) Thanks [@ZhangYukwiver](https://github.com/ZhangYukwiver)! - Find custom Jianying and CapCut draft folders when their settings quote paths containing commas or semicolons, so exports go to the folder the app uses. Also read escaped paths from older Qt settings.
+
+- [#186](https://github.com/openfilm/openfilm/pull/186) [`04f6d10`](https://github.com/openfilm/openfilm/commit/04f6d10b07ef6324d8bcc58eef9c3954b5c67771) Thanks [@WEBGRS](https://github.com/WEBGRS)! - Desktop: the sign-in window hints for MiniMax Code (international accounts pick their region with `mcode login --region global`) and CodeBuddy (its window is titled CodeBuddy) say what to do.
+
+- [#175](https://github.com/openfilm/openfilm/pull/175) [`cf6cd6f`](https://github.com/openfilm/openfilm/commit/cf6cd6fa9b3d4ee50dd963853ee6ca4f8354ecf4) Thanks [@PazChen](https://github.com/PazChen)! - Exports: a video whose browser crashed or stopped answering is drawn once more in a new one, as an editing project's pages already were. A page or a file the browser could not load for want of the system's network buffers (`net::ERR_NO_BUFFER_SPACE`, seen on Windows) is drawn again too, instead of failing the export.
+
+- [#194](https://github.com/openfilm/openfilm/pull/194) [`14a47bf`](https://github.com/openfilm/openfilm/commit/14a47bf1daab861f0deb0d1f084a36415da3960a) Thanks [@PazChen](https://github.com/PazChen)! - `openfilm get call --path` also takes the path without its leading slash (`--path speech` is `/speech`), so it works from Git Bash on Windows, which turns an argument starting with `/` into a folder path. A path Git Bash turned that way now gets its own message: drop the leading slash or put `MSYS_NO_PATHCONV=1` in front of the command.
+
+- [#200](https://github.com/openfilm/openfilm/pull/200) [`ce2e120`](https://github.com/openfilm/openfilm/commit/ce2e120066874e631c8f8c7d8ddc99d1deea2bcd) Thanks [@WEBGRS](https://github.com/WEBGRS)! - In the app, with no project open, the logo at the top left opens Settings. The projects window's shade covered it, so a click on it did nothing. The top bar now stays above the shade, in the window's color.
+
 ## 0.2.5
 
 ### Patch Changes

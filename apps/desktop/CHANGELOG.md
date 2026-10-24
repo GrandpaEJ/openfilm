@@ -1,5 +1,22 @@
 # @openfilm/desktop
 
+## 0.3.0
+
+### Patch Changes
+
+- [#175](https://github.com/openfilm/openfilm/pull/175) [`cf6cd6f`](https://github.com/openfilm/openfilm/commit/cf6cd6fa9b3d4ee50dd963853ee6ca4f8354ecf4) Thanks [@PazChen](https://github.com/PazChen)! - Windows: DeepSeek Harness installed with npm starts in the chat. The app's own Node now starts an agent's program as the main module, as Node would, so a program that runs only when it is the main one (DeepSeek Harness's `dsh`) no longer exits at once without a word.
+
+- [#197](https://github.com/openfilm/openfilm/pull/197) [`bae8bae`](https://github.com/openfilm/openfilm/commit/bae8bae7140950fdc2f728d3dbab9c29ce7f18b9) Thanks [@PazChen](https://github.com/PazChen)! - DeepSeek Harness shows its work in the chat as it goes. Each command it runs, file it reads or writes, search and web lookup now shows as a step the moment it starts, as with the other agents, instead of only "Working" until the whole reply appears at the end.
+
+- [#201](https://github.com/openfilm/openfilm/pull/201) [`046155f`](https://github.com/openfilm/openfilm/commit/046155fc6209c7ea87449d9b3878e27ba9177578) Thanks [@WEBGRS](https://github.com/WEBGRS)! - A read step in the chat names the file it read, whichever agent read it. Claude Code's ended as "File", OpenCode's and Copilot's as a long path cut short (OpenCode's without its drive) and Cursor's sometimes as the whole path; each now shows the file's name, as Codex's does.
+
+- [#204](https://github.com/openfilm/openfilm/pull/204) [`1d5b497`](https://github.com/openfilm/openfilm/commit/1d5b497d8dcd2eddd06c8520c2177090c0ca5e8b) Thanks [@WEBGRS](https://github.com/WEBGRS)! - Windows: folders with Chinese (or other non-English) names on the PATH, and the other variables Windows keeps for the person, reach the agents as they are. On a Chinese Windows they came out garbled (`E:\软件安装` read as `E:\������װ`), so an agent installed into such a folder while the app ran was not found, and "Why isn't it found?" listed the garbled folder.
+
+- [#200](https://github.com/openfilm/openfilm/pull/200) [`ce2e120`](https://github.com/openfilm/openfilm/commit/ce2e120066874e631c8f8c7d8ddc99d1deea2bcd) Thanks [@WEBGRS](https://github.com/WEBGRS)! - In the app, with no project open, the logo at the top left opens Settings. The projects window's shade covered it, so a click on it did nothing. The top bar now stays above the shade, in the window's color.
+
+- Updated dependencies [[`619c163`](https://github.com/openfilm/openfilm/commit/619c163d2632e6e87e989049fec04dfc22188cd1), [`04f6d10`](https://github.com/openfilm/openfilm/commit/04f6d10b07ef6324d8bcc58eef9c3954b5c67771), [`cf6cd6f`](https://github.com/openfilm/openfilm/commit/cf6cd6fa9b3d4ee50dd963853ee6ca4f8354ecf4), [`14a47bf`](https://github.com/openfilm/openfilm/commit/14a47bf1daab861f0deb0d1f084a36415da3960a), [`28206c3`](https://github.com/openfilm/openfilm/commit/28206c376e0d398e69df7b541b3edb1313fd47b7), [`ce2e120`](https://github.com/openfilm/openfilm/commit/ce2e120066874e631c8f8c7d8ddc99d1deea2bcd)]:
+  - openfilm@0.3.0
+
 ## 0.2.5
 
 ### Patch Changes
