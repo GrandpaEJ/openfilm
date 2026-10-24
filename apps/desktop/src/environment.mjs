@@ -18,8 +18,10 @@ import { homedir, userInfo } from 'node:os';
 import { isAbsolute, join } from 'node:path';
 
 /* what the system gives every program the person starts, a terminal included: SSH_AUTH_SOCK (their keys' agent, for git
-   over ssh) comes from it, not from the shell's files */
-const OS_KEYS = ['HOME', 'USER', 'LOGNAME', 'SHELL', 'TMPDIR', 'LANG', 'TZ', 'SSH_AUTH_SOCK'];
+   over ssh) comes from it, not from the shell's files. On a Linux desktop the display manager sets the session's
+   display variables for every program it starts too (DISPLAY, WAYLAND_DISPLAY, XAUTHORITY, XDG_RUNTIME_DIR); without
+   them no window can be shown. */
+const OS_KEYS = ['HOME', 'USER', 'LOGNAME', 'SHELL', 'TMPDIR', 'LANG', 'TZ', 'SSH_AUTH_SOCK', 'DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'XDG_RUNTIME_DIR'];
 /** what a Windows program needs to find its system, its profile and its temporary folder */
 const WIN_KEYS = ['SystemRoot', 'SystemDrive', 'windir', 'ComSpec', 'PATHEXT', 'TEMP', 'TMP', 'USERPROFILE', 'USERNAME', 'USERDOMAIN',
   'HOMEDRIVE', 'HOMEPATH', 'APPDATA', 'LOCALAPPDATA', 'ProgramData', 'ProgramFiles', 'ProgramFiles(x86)', 'ProgramW6432',
@@ -66,7 +68,7 @@ export const PATH_SEP = windows ? ';' : ':';
 /** PATH from an environment, whatever its case (Windows calls it Path). */
 export const pathOf = (env) => env.PATH ?? env.Path ?? Object.entries(env).find(([k]) => k.toLowerCase() === 'path')?.[1] ?? '';
 
-/** The OS identity variables only (HOME, USER, LOGNAME, SHELL, TMPDIR, LANG, LC_*, TZ). */
+/** The OS identity variables only (HOME, USER, LOGNAME, SHELL, TMPDIR, LANG, LC_*, TZ; on Linux, the session's display). */
 export function osEnvironment(source = process.env, { home = homedir(), shell = accountShell() } = {}) {
   const env = {};
   for (const [key, value] of Object.entries(source)) {

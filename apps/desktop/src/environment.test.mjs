@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import {
-  childEnvironment, environmentCache, expandWindowsVars, lastPathSource, loginShellVariables, macProxy, noProxyList, parseRegQuery,
+  childEnvironment, environmentCache, expandWindowsVars, lastPathSource, loginShellVariables, macProxy, noProxyList, osEnvironment, parseRegQuery,
   parseScutilProxy, proxyVariables, regQuery, registryVariables, shellSubset, shellVariables, windowsFreshPath, windowsProxy, withSystemProxy,
 } from './environment.mjs';
 
@@ -153,6 +153,20 @@ test("the agents get all the person's shell sets, but what the shell and its ter
   assert.deepEqual(Object.keys(all).sort(), ['ANTHROPIC_BASE_URL', 'GITHUB_TOKEN', 'HTTPS_PROXY', 'NODE_EXTRA_CA_CERTS', 'PATH']);
   assert.ok(all.PATH.startsWith('/opt/homebrew/bin:/usr/bin'));
   assert.deepEqual(Object.keys(shellSubset(all, '/home/me/')).sort(), ['HTTPS_PROXY', 'PATH']);
+});
+
+test("the session's display is handed on, so a window can be opened; an agent's own variables are not", () => {
+  const source = {
+    HOME: '/home/me', USER: 'me', DISPLAY: ':0', WAYLAND_DISPLAY: 'wayland-0', XAUTHORITY: '/run/user/1000/.mutter-Xwaylandauth.X',
+    XDG_RUNTIME_DIR: '/run/user/1000', CLAUDECODE: '1', ANTHROPIC_BASE_URL: 'https://gateway.example',
+  };
+  const env = osEnvironment(source, { home: '/home/me', shell: '/bin/zsh' });
+  assert.equal(env.DISPLAY, ':0');
+  assert.equal(env.WAYLAND_DISPLAY, 'wayland-0');
+  assert.equal(env.XAUTHORITY, '/run/user/1000/.mutter-Xwaylandauth.X');
+  assert.equal(env.XDG_RUNTIME_DIR, '/run/user/1000');
+  assert.equal(env.CLAUDECODE, undefined);
+  assert.equal(env.ANTHROPIC_BASE_URL, undefined);
 });
 
 const SCUTIL = `<dictionary> {
